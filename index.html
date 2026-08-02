@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Calculadora de Orçamento — Estelar</title>
+<style>
+  :root {
+    --azul: #2563eb;
+    --ambar: #f59e0b;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card2: #16213a;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  @media (min-width: 700px) {
+    body { padding: 40px 20px; }
+    .wrap { max-width: 620px; }
+    h1 { font-size: 22px; }
+    .sub { font-size: 14px; }
+    .result .value { font-size: 38px; }
+    .proposal-header { padding: 28px 26px; }
+    .proposal-items, .proposal-meta, .proposal-footer { padding-left: 26px; padding-right: 26px; }
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #fff; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; margin-top: 12px; }
+  label:first-child { margin-top: 0; }
+  select, input[type=number] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0f172a;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .checkbox-row input { width: 18px; height: 18px; }
+  .checkbox-row label { margin: 0; color: var(--text); font-size: 14px; }
+
+  .item-card {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--azul);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .item-header span { font-size: 13px; font-weight: 700; color: var(--ambar); }
+  .remove-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .remove-btn:hover { color: #f87171; border-color: #f87171; }
+  .item-subtotal {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .item-subtotal b { color: #fff; }
+
+  .add-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--ambar);
+    background: transparent;
+    color: var(--ambar);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .add-btn:hover { background: rgba(245, 158, 11, 0.1); }
+
+  .result {
+    background: linear-gradient(135deg, var(--azul), #1d4ed8);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  .result .label { color: #bfdbfe; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .result .value { color: #fff; font-size: 32px; font-weight: 700; margin: 4px 0; }
+  .breakdown { margin-top: 10px; font-size: 12px; color: #dbeafe; text-align: left; }
+  .breakdown div { display: flex; justify-content: space-between; padding: 2px 0; }
+
+  details { margin-top: 4px; }
+  summary { cursor: pointer; color: var(--ambar); font-size: 13px; font-weight: 600; padding: 4px 0; }
+  .price-grid { display: grid; grid-template-columns: 1fr 90px; gap: 8px 10px; align-items: center; margin-top: 10px; }
+  .price-grid span { font-size: 12px; color: var(--muted); }
+  .price-grid input { padding: 6px; font-size: 12px; }
+
+  .hidden { display: none; }
+  .note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+
+  .gerar-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: var(--ambar);
+    color: #1a1200;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .gerar-btn:hover { filter: brightness(1.05); }
+
+  /* Proposta / visualização do cliente */
+  .proposal {
+    background: #fff;
+    color: #0f172a;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .proposal-header {
+    background: linear-gradient(135deg, var(--azul), #1d4ed8);
+    padding: 22px 20px;
+    color: #fff;
+  }
+  .proposal-header .brand {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .proposal-header .brand span { color: var(--ambar); }
+  .proposal-header .tagline { font-size: 12px; color: #dbeafe; margin-top: 2px; }
+  .proposal-meta {
+    padding: 16px 20px 4px;
+    font-size: 13px;
+  }
+  .proposal-meta label { color: #64748b; font-size: 12px; margin-top: 10px; }
+  .proposal-meta input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 14px;
+  }
+  .proposal-items { padding: 6px 20px 4px; }
+  .proposal-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .proposal-item .titulo { font-weight: 700; font-size: 14px; color: #0f172a; }
+  .proposal-item .detalhe { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .proposal-item .preco { font-weight: 700; color: var(--azul); font-size: 14px; margin-top: 6px; text-align: right; }
+  .proposal-total {
+    margin: 10px 20px 0;
+    padding: 16px;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .proposal-total .lbl { font-size: 12px; color: #cbd5e1; text-transform: uppercase; }
+  .proposal-total .val { font-size: 22px; font-weight: 800; color: var(--ambar); }
+  .proposal-footer {
+    padding: 16px 20px 20px;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .action-row { display: flex; gap: 8px; margin-top: 14px; }
+  .action-row button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .btn-primary { background: var(--azul); color: #fff; border-color: var(--azul); }
+  .btn-secondary { background: transparent; color: var(--text); }
+  .voltar-link {
+    display: block;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  #whatsappText {
+    width: 100%;
+    min-height: 90px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0f172a;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+  }
+  @media print {
+    body * { visibility: hidden; }
+    #clientView, #clientView * { visibility: visible; }
+    #clientView { position: absolute; top: 0; left: 0; width: 100%; padding: 0; margin: 0; }
+    .no-print { display: none !important; }
+    body { background: #fff; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚡ Calculadora de Orçamento</h1>
+  <div class="sub">Adicione quantos aparelhos e serviços forem necessários no mesmo orçamento</div>
+
+  <div id="editorView">
+  <div class="card">
+    <details>
+      <summary>⚙️ Configurações de preço (valores médios, ajuste aqui)</summary>
+      <div class="price-grid">
+        <span>Mão de obra base — Instalação (R$)</span><input type="number" id="baseInstalacao" value="280">
+        <span>Mão de obra base — Manutenção (R$)</span><input type="number" id="baseManutencao" value="100">
+        <span>Mão de obra base — Higienização (R$)</span><input type="number" id="baseHigienizacao" value="175">
+        <span>Adicional por porte — 9.000 (R$)</span><input type="number" id="add9000" value="0">
+        <span>Adicional por porte — 12.000 (R$)</span><input type="number" id="add12000" value="0">
+        <span>Adicional por porte — 18.000 (R$)</span><input type="number" id="add18000" value="60">
+        <span>Adicional por porte — 24.000 (R$)</span><input type="number" id="add24000" value="100">
+        <span>Adicional por porte — 30.000 (R$)</span><input type="number" id="add30000" value="150">
+        <span>Adicional por porte — 36.000+ (R$)</span><input type="number" id="add36000" value="210">
+        <span>Multiplicador dificuldade — Médio</span><input type="number" id="multMedio" value="1.15" step="0.01">
+        <span>Multiplicador dificuldade — Difícil</span><input type="number" id="multDificil" value="1.45" step="0.01">
+        <span>Preço por metro de tubulação (R$)</span><input type="number" id="precoMetro" value="45">
+        <span>Suporte extra — valor fixo (R$)</span><input type="number" id="precoSuporte" value="60">
+        <span>Materiais base — instalação (R$)</span><input type="number" id="materiaisInstalacao" value="120">
+        <span>Insumos — manutenção/higienização (R$)</span><input type="number" id="materiaisManutencao" value="35">
+      </div>
+    </details>
+  </div>
+
+  <div id="itemsContainer"></div>
+
+  <button class="add-btn" id="addItemBtn">+ Adicionar item ao orçamento</button>
+
+  <div class="result">
+    <div class="label">Valor total do orçamento</div>
+    <div class="value" id="totalValue">R$ 0,00</div>
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+  <div class="note">Estimativa de referência. Confirme sempre com vistoria — cada edifício pode exigir ajustes de material não previstos aqui.</div>
+
+  <button class="gerar-btn" id="gerarClienteBtn">📄 Gerar orçamento para o cliente</button>
+  </div>
+
+  <div id="clientView" class="hidden">
+    <div class="proposal">
+      <div class="proposal-header">
+        <div class="brand">Estelar<span>•</span></div>
+        <div class="tagline">Ar-condicionado & Energia Solar</div>
+      </div>
+      <div class="proposal-meta no-print">
+        <label>Nome do cliente</label>
+        <input type="text" id="clienteNome" placeholder="Ex: João Silva">
+        <label>Validade da proposta (dias)</label>
+        <input type="number" id="validadeDias" value="7" min="1">
+      </div>
+      <div class="proposal-items" id="proposalItems"></div>
+      <div class="proposal-total">
+        <span class="lbl">Total</span>
+        <span class="val" id="proposalTotal">R$ 0,00</span>
+      </div>
+      <div class="proposal-footer" id="proposalFooter"></div>
+    </div>
+
+    <div class="action-row no-print">
+      <button class="btn-primary" id="printBtn">🖨️ Salvar / imprimir PDF</button>
+      <button class="btn-secondary" id="whatsappBtn">📋 Texto p/ WhatsApp</button>
+    </div>
+    <div class="action-row no-print">
+      <button class="btn-secondary" id="novaAbaBtn" style="flex:1;">🔗 Abrir em nova aba (recomendado p/ imprimir)</button>
+    </div>
+    <textarea id="whatsappText" class="hidden no-print" readonly></textarea>
+    <div class="voltar-link no-print" id="voltarBtn">← Voltar para edição</div>
+  </div>
+</div>
+
+<script>
+var items = [];
+var nextId = 1;
+
+function novoItem() {
+  return { id: nextId++, tipo: 'instalacao', porte: '12000', dificuldade: 'medio', metros: 5, suporte: false, pecasDesc: '', pecas: 0 };
+}
+
+function addItem() {
+  items.push(novoItem());
+  render();
+}
+
+function removeItem(id) {
+  items = items.filter(function(it) { return it.id !== id; });
+  render();
+}
+
+function money(v) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function cfg() {
+  return {
+    baseInstalacao: parseFloat(document.getElementById('baseInstalacao').value) || 0,
+    baseManutencao: parseFloat(document.getElementById('baseManutencao').value) || 0,
+    baseHigienizacao: parseFloat(document.getElementById('baseHigienizacao').value) || 0,
+    add: {
+      '9000': parseFloat(document.getElementById('add9000').value) || 0,
+      '12000': parseFloat(document.getElementById('add12000').value) || 0,
+      '18000': parseFloat(document.getElementById('add18000').value) || 0,
+      '24000': parseFloat(document.getElementById('add24000').value) || 0,
+      '30000': parseFloat(document.getElementById('add30000').value) || 0,
+      '36000': parseFloat(document.getElementById('add36000').value) || 0
+    },
+    multMedio: parseFloat(document.getElementById('multMedio').value) || 1,
+    multDificil: parseFloat(document.getElementById('multDificil').value) || 1,
+    precoMetro: parseFloat(document.getElementById('precoMetro').value) || 0,
+    precoSuporte: parseFloat(document.getElementById('precoSuporte').value) || 0,
+    materiaisInstalacao: parseFloat(document.getElementById('materiaisInstalacao').value) || 0,
+    materiaisManutencao: parseFloat(document.getElementById('materiaisManutencao').value) || 0
+  };
+}
+
+function calcItem(it, c) {
+  var baseServico = it.tipo === 'instalacao' ? c.baseInstalacao : (it.tipo === 'manutencao' ? c.baseManutencao : c.baseHigienizacao);
+  var adicionalPorte = c.add[it.porte] || 0;
+  var multDif = it.dificuldade === 'medio' ? c.multMedio : (it.dificuldade === 'dificil' ? c.multDificil : 1);
+  var maoDeObra = (baseServico + adicionalPorte) * multDif;
+
+  var materiais = 0, tubulacaoCusto = 0, suporteCusto = 0;
+  if (it.tipo === 'instalacao') {
+    tubulacaoCusto = (it.metros || 0) * c.precoMetro;
+    suporteCusto = it.suporte ? c.precoSuporte : 0;
+    materiais = c.materiaisInstalacao + tubulacaoCusto + suporteCusto;
+  } else {
+    materiais = c.materiaisManutencao;
+  }
+  var pecasValor = it.tipo === 'manutencao' ? (parseFloat(it.pecas) || 0) : 0;
+  return { maoDeObra: maoDeObra, materiais: materiais, tubulacaoCusto: tubulacaoCusto, suporteCusto: suporteCusto, pecas: pecasValor, total: maoDeObra + materiais + pecasValor };
+}
+
+function tipoLabel(t) {
+  return t === 'instalacao' ? 'Instalação' : (t === 'manutencao' ? 'Manutenção' : 'Higienização');
+}
+
+function render() {
+  var container = document.getElementById('itemsContainer');
+  container.innerHTML = '';
+  items.forEach(function(it, idx) {
+    var div = document.createElement('div');
+    div.className = 'item-card';
+    div.innerHTML =
+      '<div class="item-header"><span>Item ' + (idx + 1) + ' — ' + tipoLabel(it.tipo) + '</span>' +
+      '<button class="remove-btn" data-remove="' + it.id + '">✕</button></div>' +
+      '<label>Tipo de serviço</label>' +
+      '<select data-field="tipo" data-id="' + it.id + '">' +
+        '<option value="instalacao"' + (it.tipo === 'instalacao' ? ' selected' : '') + '>Instalação</option>' +
+        '<option value="manutencao"' + (it.tipo === 'manutencao' ? ' selected' : '') + '>Manutenção</option>' +
+        '<option value="higienizacao"' + (it.tipo === 'higienizacao' ? ' selected' : '') + '>Higienização</option>' +
+      '</select>' +
+      '<label>Porte do aparelho (BTUs)</label>' +
+      '<select data-field="porte" data-id="' + it.id + '">' +
+        ['9000','12000','18000','24000','30000','36000'].map(function(v) {
+          var lbl = v === '36000' ? '36.000+' : (parseInt(v)/1000) + '.000';
+          return '<option value="' + v + '"' + (it.porte === v ? ' selected' : '') + '>' + lbl + '</option>';
+        }).join('') +
+      '</select>' +
+      '<label>Dificuldade de acesso (altura / obstáculos)</label>' +
+      '<select data-field="dificuldade" data-id="' + it.id + '">' +
+        '<option value="facil"' + (it.dificuldade === 'facil' ? ' selected' : '') + '>Fácil — térreo / fácil acesso</option>' +
+        '<option value="medio"' + (it.dificuldade === 'medio' ? ' selected' : '') + '>Médio</option>' +
+        '<option value="dificil"' + (it.dificuldade === 'dificil' ? ' selected' : '') + '>Difícil — altura / acesso complicado</option>' +
+      '</select>' +
+      (it.tipo === 'instalacao' ?
+        '<label>Distância entre unidades — metros de tubulação</label>' +
+        '<input type="number" min="0" step="0.5" data-field="metros" data-id="' + it.id + '" value="' + it.metros + '">' +
+        '<div class="checkbox-row"><input type="checkbox" data-field="suporte" data-id="' + it.id + '" ' + (it.suporte ? 'checked' : '') + '>' +
+        '<label>Precisa de suporte / estrutura extra</label></div>'
+        : '') +
+      (it.tipo === 'manutencao' ?
+        '<label>Peça(s) a substituir — descrição (opcional)</label>' +
+        '<input type="text" placeholder="ex: capacitor, placa, motor ventilador" data-field="pecasDesc" data-id="' + it.id + '" value="' + (it.pecasDesc || '') + '">' +
+        '<label>Valor da(s) peça(s) — preencher a cada serviço (R$)</label>' +
+        '<input type="number" min="0" step="1" data-field="pecas" data-id="' + it.id + '" value="' + (it.pecas || 0) + '">'
+        : '') +
+      '<div class="item-subtotal"><span>Subtotal do item</span><b class="subtotal-value"></b></div>';
+    container.appendChild(div);
+  });
+  calcular();
+}
+
+function calcular() {
+  var c = cfg();
+  var grandTotal = 0;
+  var maoDeObraTotal = 0;
+  var materiaisTotal = 0;
+  var pecasTotal = 0;
+
+  var cards = document.querySelectorAll('.item-card');
+  items.forEach(function(it, idx) {
+    var r = calcItem(it, c);
+    grandTotal += r.total;
+    maoDeObraTotal += r.maoDeObra;
+    materiaisTotal += r.materiais;
+    pecasTotal += r.pecas;
+    var card = cards[idx];
+    if (card) card.querySelector('.subtotal-value').textContent = money(r.total);
+  });
+
+  document.getElementById('totalValue').textContent = money(grandTotal);
+  var bd = '<div><span>Mão de obra (todos os itens)</span><span>' + money(maoDeObraTotal) + '</span></div>' +
+           '<div><span>Materiais (todos os itens)</span><span>' + money(materiaisTotal) + '</span></div>' +
+           (pecasTotal > 0 ? '<div><span>Peças / substituições</span><span>' + money(pecasTotal) + '</span></div>' : '') +
+           '<div><span>Itens no orçamento</span><span>' + items.length + '</span></div>';
+  document.getElementById('breakdown').innerHTML = bd;
+}
+
+document.getElementById('addItemBtn').addEventListener('click', addItem);
+
+document.getElementById('itemsContainer').addEventListener('input', function(e) {
+  var id = parseInt(e.target.getAttribute('data-id'));
+  var field = e.target.getAttribute('data-field');
+  if (!id || !field) return;
+  var it = items.find(function(i) { return i.id === id; });
+  if (!it) return;
+  if (field === 'suporte') it[field] = e.target.checked;
+  else if (field === 'metros' || field === 'pecas') it[field] = parseFloat(e.target.value) || 0;
+  else it[field] = e.target.value;
+  if (field === 'tipo') render(); else calcular();
+});
+
+document.getElementById('itemsContainer').addEventListener('click', function(e) {
+  var id = e.target.getAttribute('data-remove');
+  if (id) removeItem(parseInt(id));
+});
+
+document.querySelectorAll('.price-grid input').forEach(function(el) {
+  el.addEventListener('input', calcular);
+});
+
+function itemDescricaoCliente(it) {
+  var porteLabel = (parseInt(it.porte) / 1000) + '.000 BTUs';
+  if (it.tipo === 'instalacao') {
+    var det = 'Aparelho ' + porteLabel + ' — tubulação de ' + (it.metros || 0) + 'm';
+    if (it.suporte) det += ' + suporte extra';
+    return { titulo: 'Instalação de ar-condicionado', detalhe: det };
+  }
+  if (it.tipo === 'manutencao') {
+    var det2 = 'Aparelho ' + porteLabel;
+    if (it.pecasDesc) det2 += ' — peça: ' + it.pecasDesc;
+    return { titulo: 'Manutenção', detalhe: det2 };
+  }
+  return { titulo: 'Higienização', detalhe: 'Aparelho ' + porteLabel };
+}
+
+function gerarDadosProposta() {
+  var c = cfg();
+  var grandTotal = 0;
+  var itemsHtml = '';
+  var whatsLines = [];
+
+  items.forEach(function(it) {
+    var r = calcItem(it, c);
+    grandTotal += r.total;
+    var d = itemDescricaoCliente(it);
+    itemsHtml += '<div class="proposal-item">' +
+      '<div class="titulo">' + d.titulo + '</div>' +
+      '<div class="detalhe">' + d.detalhe + '</div>' +
+      '<div class="preco">' + money(r.total) + '</div>' +
+      '</div>';
+    whatsLines.push('• ' + d.titulo + ' (' + d.detalhe + '): ' + money(r.total));
+  });
+
+  var validade = parseInt(document.getElementById('validadeDias').value) || 7;
+  var nome = document.getElementById('clienteNome').value.trim();
+  var footerText = 'Orçamento válido por ' + validade + ' dias. Valores sujeitos a confirmação após vistoria técnica no local.';
+  var whatsText = 'Orçamento Estelar' + (nome ? ' — ' + nome : '') + '\n\n' +
+    whatsLines.join('\n') + '\n\n' +
+    'Total: ' + money(grandTotal) + '\n' +
+    'Válido por ' + validade + ' dias.';
+
+  return {
+    itemsHtml: itemsHtml || '<div class="proposal-item"><div class="detalhe">Nenhum item adicionado ainda.</div></div>',
+    total: grandTotal,
+    totalFormatado: money(grandTotal),
+    footerText: footerText,
+    whatsText: whatsText,
+    nome: nome
+  };
+}
+
+function montarProposta() {
+  var d = gerarDadosProposta();
+  document.getElementById('proposalItems').innerHTML = d.itemsHtml;
+  document.getElementById('proposalTotal').textContent = d.totalFormatado;
+  document.getElementById('proposalFooter').textContent = d.footerText;
+  document.getElementById('whatsappText').value = d.whatsText;
+}
+
+function buildStandaloneHTML(d) {
+  return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<title>Orçamento Estelar' + (d.nome ? ' — ' + d.nome : '') + '</title>' +
+    '<style>' +
+    'body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;padding:20px;color:#0f172a;}' +
+    '.wrap{max-width:480px;margin:0 auto;}' +
+    '.proposal{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);}' +
+    '.proposal-header{background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:22px 20px;color:#fff;}' +
+    '.brand{font-size:20px;font-weight:800;}' +
+    '.brand span{color:#f59e0b;}' +
+    '.tagline{font-size:12px;color:#dbeafe;margin-top:2px;}' +
+    '.proposal-items{padding:6px 20px 4px;}' +
+    '.proposal-item{padding:12px 0;border-bottom:1px solid #e2e8f0;}' +
+    '.proposal-item .titulo{font-weight:700;font-size:14px;}' +
+    '.proposal-item .detalhe{font-size:12px;color:#64748b;margin-top:2px;}' +
+    '.proposal-item .preco{font-weight:700;color:#2563eb;font-size:14px;margin-top:6px;text-align:right;}' +
+    '.proposal-total{margin:10px 20px 0;padding:16px;border-radius:10px;background:#0f172a;color:#fff;display:flex;justify-content:space-between;align-items:center;}' +
+    '.proposal-total .lbl{font-size:12px;color:#cbd5e1;text-transform:uppercase;}' +
+    '.proposal-total .val{font-size:22px;font-weight:800;color:#f59e0b;}' +
+    '.proposal-footer{padding:16px 20px 20px;font-size:11px;color:#64748b;line-height:1.5;}' +
+    '.print-btn{width:100%;padding:13px;margin-top:16px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:14px;font-weight:700;cursor:pointer;}' +
+    '@media print{.no-print{display:none !important;}body{background:#fff;padding:0;}}' +
+    '</style></head><body><div class="wrap">' +
+    '<div class="proposal">' +
+    '<div class="proposal-header"><div class="brand">Estelar<span>•</span></div><div class="tagline">Ar-condicionado & Energia Solar</div></div>' +
+    '<div class="proposal-items">' + d.itemsHtml + '</div>' +
+    '<div class="proposal-total"><span class="lbl">Total</span><span class="val">' + d.totalFormatado + '</span></div>' +
+    '<div class="proposal-footer">' + d.footerText + '</div>' +
+    '</div>' +
+    '<button class="print-btn no-print" onclick="window.print()">🖨️ Salvar / imprimir PDF</button>' +
+    '</div></body></html>';
+}
+
+document.getElementById('gerarClienteBtn').addEventListener('click', function() {
+  montarProposta();
+  document.getElementById('editorView').classList.add('hidden');
+  document.getElementById('gerarClienteBtn').classList.add('hidden');
+  document.getElementById('clientView').classList.remove('hidden');
+});
+
+document.getElementById('voltarBtn').addEventListener('click', function() {
+  document.getElementById('clientView').classList.add('hidden');
+  document.getElementById('editorView').classList.remove('hidden');
+  document.getElementById('gerarClienteBtn').classList.remove('hidden');
+});
+
+document.getElementById('clienteNome').addEventListener('input', montarProposta);
+document.getElementById('validadeDias').addEventListener('input', montarProposta);
+
+document.getElementById('printBtn').addEventListener('click', function() {
+  window.print();
+});
+
+document.getElementById('novaAbaBtn').addEventListener('click', function() {
+  var d = gerarDadosProposta();
+  var html = buildStandaloneHTML(d);
+  var blob = new Blob([html], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var win = window.open(url, '_blank');
+  if (!win) {
+    alert('O navegador bloqueou a nova aba. Permita pop-ups para este site e tente novamente.');
+  }
+});
+
+document.getElementById('whatsappBtn').addEventListener('click', function() {
+  var ta = document.getElementById('whatsappText');
+  ta.classList.remove('hidden');
+  ta.select();
+  try {
+    navigator.clipboard.writeText(ta.value);
+  } catch (e) {
+    try { document.execCommand('copy'); } catch (e2) {}
+  }
+});
+
+addItem();
+</script>
+</body>
+</html>
