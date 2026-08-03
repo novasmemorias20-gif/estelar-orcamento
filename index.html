@@ -416,12 +416,12 @@ function render() {
         '<option value="dificil"' + (it.dificuldade === 'dificil' ? ' selected' : '') + '>Difícil — altura / acesso complicado</option>' +
       '</select>' +
       (it.tipo === 'instalacao' ?
-        '<label>Distância entre unidades — metros de tubulação</label>' +
+        '<label>Distância entre unidades — metros de infra</label>' +
         '<input type="number" min="0" step="0.5" data-field="metros" data-id="' + it.id + '" value="' + it.metros + '">' +
         '<div class="checkbox-row"><input type="checkbox" data-field="suporte" data-id="' + it.id + '" ' + (it.suporte ? 'checked' : '') + '>' +
         '<label>Precisa de suporte / estrutura extra</label></div>' +
         '<div class="checkbox-row"><input type="checkbox" data-field="eletrica220" data-id="' + it.id + '" ' + (it.eletrica220 ? 'checked' : '') + '>' +
-        '<label>Instalação elétrica 220V ainda não feita</label></div>'
+        '<label>Instalação elétrica 220V</label></div>'
         : '') +
       (it.tipo === 'manutencao' ?
         '<label>Peça(s) a substituir — descrição (opcional)</label>' +
