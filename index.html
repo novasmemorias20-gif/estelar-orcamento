@@ -265,6 +265,7 @@
         <span>Multiplicador dificuldade — Difícil</span><input type="number" id="multDificil" value="1.45" step="0.01">
         <span>Preço por metro de tubulação (R$)</span><input type="number" id="precoMetro" value="45">
         <span>Suporte extra — valor fixo (R$)</span><input type="number" id="precoSuporte" value="60">
+        <span>Instalação elétrica 220V — valor fixo (R$)</span><input type="number" id="precoEletrica" value="100">
         <span>Materiais base — instalação (R$)</span><input type="number" id="materiaisInstalacao" value="120">
         <span>Insumos — manutenção/higienização (R$)</span><input type="number" id="materiaisManutencao" value="35">
       </div>
@@ -323,7 +324,7 @@ var items = [];
 var nextId = 1;
 
 function novoItem() {
-  return { id: nextId++, tipo: 'instalacao', porte: '12000', dificuldade: 'medio', metros: 5, suporte: false, pecasDesc: '', pecas: 0 };
+  return { id: nextId++, tipo: 'instalacao', porte: '12000', dificuldade: 'medio', metros: 5, suporte: false, eletrica220: false, pecasDesc: '', pecas: 0 };
 }
 
 function addItem() {
@@ -357,6 +358,7 @@ function cfg() {
     multDificil: parseFloat(document.getElementById('multDificil').value) || 1,
     precoMetro: parseFloat(document.getElementById('precoMetro').value) || 0,
     precoSuporte: parseFloat(document.getElementById('precoSuporte').value) || 0,
+    precoEletrica: parseFloat(document.getElementById('precoEletrica').value) || 0,
     materiaisInstalacao: parseFloat(document.getElementById('materiaisInstalacao').value) || 0,
     materiaisManutencao: parseFloat(document.getElementById('materiaisManutencao').value) || 0
   };
@@ -368,16 +370,17 @@ function calcItem(it, c) {
   var multDif = it.dificuldade === 'medio' ? c.multMedio : (it.dificuldade === 'dificil' ? c.multDificil : 1);
   var maoDeObra = (baseServico + adicionalPorte) * multDif;
 
-  var materiais = 0, tubulacaoCusto = 0, suporteCusto = 0;
+  var materiais = 0, tubulacaoCusto = 0, suporteCusto = 0, eletricaCusto = 0;
   if (it.tipo === 'instalacao') {
     tubulacaoCusto = (it.metros || 0) * c.precoMetro;
     suporteCusto = it.suporte ? c.precoSuporte : 0;
-    materiais = c.materiaisInstalacao + tubulacaoCusto + suporteCusto;
+    eletricaCusto = it.eletrica220 ? c.precoEletrica : 0;
+    materiais = c.materiaisInstalacao + tubulacaoCusto + suporteCusto + eletricaCusto;
   } else {
     materiais = c.materiaisManutencao;
   }
   var pecasValor = it.tipo === 'manutencao' ? (parseFloat(it.pecas) || 0) : 0;
-  return { maoDeObra: maoDeObra, materiais: materiais, tubulacaoCusto: tubulacaoCusto, suporteCusto: suporteCusto, pecas: pecasValor, total: maoDeObra + materiais + pecasValor };
+  return { maoDeObra: maoDeObra, materiais: materiais, tubulacaoCusto: tubulacaoCusto, suporteCusto: suporteCusto, eletricaCusto: eletricaCusto, pecas: pecasValor, total: maoDeObra + materiais + pecasValor };
 }
 
 function tipoLabel(t) {
@@ -416,7 +419,9 @@ function render() {
         '<label>Distância entre unidades — metros de tubulação</label>' +
         '<input type="number" min="0" step="0.5" data-field="metros" data-id="' + it.id + '" value="' + it.metros + '">' +
         '<div class="checkbox-row"><input type="checkbox" data-field="suporte" data-id="' + it.id + '" ' + (it.suporte ? 'checked' : '') + '>' +
-        '<label>Precisa de suporte / estrutura extra</label></div>'
+        '<label>Precisa de suporte / estrutura extra</label></div>' +
+        '<div class="checkbox-row"><input type="checkbox" data-field="eletrica220" data-id="' + it.id + '" ' + (it.eletrica220 ? 'checked' : '') + '>' +
+        '<label>Instalação elétrica 220V ainda não feita</label></div>'
         : '') +
       (it.tipo === 'manutencao' ?
         '<label>Peça(s) a substituir — descrição (opcional)</label>' +
@@ -464,7 +469,7 @@ document.getElementById('itemsContainer').addEventListener('input', function(e) 
   if (!id || !field) return;
   var it = items.find(function(i) { return i.id === id; });
   if (!it) return;
-  if (field === 'suporte') it[field] = e.target.checked;
+  if (field === 'suporte' || field === 'eletrica220') it[field] = e.target.checked;
   else if (field === 'metros' || field === 'pecas') it[field] = parseFloat(e.target.value) || 0;
   else it[field] = e.target.value;
   if (field === 'tipo') render(); else calcular();
@@ -484,6 +489,7 @@ function itemDescricaoCliente(it) {
   if (it.tipo === 'instalacao') {
     var det = 'Aparelho ' + porteLabel + ' — tubulação de ' + (it.metros || 0) + 'm';
     if (it.suporte) det += ' + suporte extra';
+    if (it.eletrica220) det += ' + instalação elétrica 220V';
     return { titulo: 'Instalação de ar-condicionado', detalhe: det };
   }
   if (it.tipo === 'manutencao') {
